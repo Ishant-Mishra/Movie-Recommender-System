@@ -38,9 +38,12 @@ This project recommends movies similar to the one selected by the user using cos
 4. Cosine similarity is calculated between movie vectors.
 5. The system recommends movies with the highest similarity scores.
 
-# Dataset
+## Dataset
 
-The project uses movie metadata datasets for generating recommendations.
+The dataset is not included in this repository due to size limitations.
+
+You can download it from:
+[[Dataset Link]](https://www.kaggle.com/datasets/tmdb/tmdb-movie-metadata)
 
 
 # Future Improvements
