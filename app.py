@@ -1,6 +1,7 @@
 import streamlit as st
 import pickle
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 import pandas as pd
 
@@ -102,11 +103,29 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# LOAD DATA
-movies_dict = pickle.load(open('movie_dict.pkl', 'rb'))
+# LOAD MODEL ARTIFACTS
+BASE_DIR = Path(__file__).resolve().parent
+MOVIE_DATA_FILE = BASE_DIR / "movie_dict.pkl"
+SIMILARITY_FILE = BASE_DIR / "similarity.pkl"
+
+missing_files = [
+    path.name for path in (MOVIE_DATA_FILE, SIMILARITY_FILE)
+    if not path.is_file()
+]
+if missing_files:
+    st.error("Missing required model artifact(s): " + ", ".join(missing_files))
+    st.info(
+        "Open Movie_Recommender_System.ipynb and run the model-preparation "
+        "cells that save movie_dict.pkl and similarity.pkl into this folder."
+    )
+    st.stop()
+
+with MOVIE_DATA_FILE.open("rb") as movie_file:
+    movies_dict = pickle.load(movie_file)
 movies = pd.DataFrame(movies_dict)
 
-similarity = pickle.load(open('similarity.pkl', 'rb'))
+with SIMILARITY_FILE.open("rb") as similarity_file:
+    similarity = pickle.load(similarity_file)
 
 
 API_KEY = os.getenv("TMDB_API_KEY")
