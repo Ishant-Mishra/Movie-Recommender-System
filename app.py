@@ -1,5 +1,6 @@
 import streamlit as st
 import pickle
+import os
 import pandas as pd
 import requests
 
@@ -105,7 +106,11 @@ movies = pd.DataFrame(movies_dict)
 similarity = pickle.load(open('similarity.pkl', 'rb'))
 
 
-API_KEY = "f278e1b63cbaa73ad83a0f7bc74f8225"
+API_KEY = os.getenv("TMDB_API_KEY")
+
+if not API_KEY:
+    st.error("TMDB API key is not configured. Set the TMDB_API_KEY environment variable and restart the app.")
+    st.stop()
 
 def fetch_movie_details(movie_id):
 
