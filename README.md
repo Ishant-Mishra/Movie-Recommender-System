@@ -65,7 +65,7 @@ Start the app:
 streamlit run app.py
 ```
 
-If Streamlit reports that `similarity.pkl` is missing, open and run the notebook’s model-preparation cells to regenerate the similarity matrix in the repository root before starting the app.
+The app can start without `similarity.pkl`: it rebuilds the matrix from the processed tags in `movie_dict.pkl` and caches it for the current app process. Rebuilding may take extra memory and startup time.
 
 ## Dataset and Model Artifacts
 
@@ -76,7 +76,7 @@ The notebook expects these two files in the repository root:
 
 Download them from the [TMDB Movie Metadata dataset on Kaggle](https://www.kaggle.com/datasets/tmdb/tmdb-movie-metadata) and place them beside the notebook. Then run `Movie_Recommender_System.ipynb` from top to bottom. Its final export cells write `movie_dict.pkl` and `similarity.pkl`, which the Streamlit app loads at startup.
 
-The raw CSV files are not currently included in this repository. Check the dataset’s terms and attribution requirements before redistributing it.
+The raw CSV files are not currently included in this repository. They are needed to recreate the processed movie data from scratch, but not for a normal app launch when `movie_dict.pkl` is present. Check the dataset’s terms and attribution requirements before redistributing it.
 
 ## Limitations
 
