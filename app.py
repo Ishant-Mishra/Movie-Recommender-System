@@ -4,6 +4,8 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 import pandas as pd
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
 load_dotenv()
 import requests
@@ -103,36 +105,54 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
+# CONFIGURATION
+API_KEY = os.getenv("TMDB_API_KEY")
+if not API_KEY:
+    st.error("TMDB API key is not configured. Set TMDB_API_KEY in your .env file and restart the app.")
+    st.stop()
+
 # LOAD MODEL ARTIFACTS
 BASE_DIR = Path(__file__).resolve().parent
 MOVIE_DATA_FILE = BASE_DIR / "movie_dict.pkl"
 SIMILARITY_FILE = BASE_DIR / "similarity.pkl"
 
-missing_files = [
-    path.name for path in (MOVIE_DATA_FILE, SIMILARITY_FILE)
-    if not path.is_file()
-]
-if missing_files:
-    st.error("Missing required model artifact(s): " + ", ".join(missing_files))
+@st.cache_resource(show_spinner="Loading movie recommendation model...")
+def load_model_artifacts():
+    if not MOVIE_DATA_FILE.is_file():
+        raise FileNotFoundError(
+            "movie_dict.pkl is missing. Run the model-preparation cells in "
+            "Movie_Recommender_System.ipynb to create it."
+        )
+
+    with MOVIE_DATA_FILE.open("rb") as movie_file:
+        movie_data = pd.DataFrame(pickle.load(movie_file))
+
+    if "tags" not in movie_data.columns or "title" not in movie_data.columns:
+        raise ValueError("movie_dict.pkl must contain at least 'title' and 'tags' columns.")
+
+    rebuilt_similarity = not SIMILARITY_FILE.is_file()
+    if rebuilt_similarity:
+        vectorizer = CountVectorizer(max_features=5000, stop_words="english")
+        vectors = vectorizer.fit_transform(movie_data["tags"].fillna("").astype(str))
+        similarity_matrix = cosine_similarity(vectors)
+    else:
+        with SIMILARITY_FILE.open("rb") as similarity_file:
+            similarity_matrix = pickle.load(similarity_file)
+
+    return movie_data, similarity_matrix, rebuilt_similarity
+
+try:
+    movies, similarity, similarity_rebuilt_at_runtime = load_model_artifacts()
+except Exception as exc:
+    st.error(f"Unable to load the movie recommendation model: {exc}")
+    st.stop()
+
+if similarity_rebuilt_at_runtime:
     st.info(
-        "Open Movie_Recommender_System.ipynb and run the model-preparation "
-        "cells that save movie_dict.pkl and similarity.pkl into this folder."
+        "similarity.pkl was not found. The similarity matrix has been rebuilt "
+        "from the tags in movie_dict.pkl and cached for this app process."
     )
-    st.stop()
 
-with MOVIE_DATA_FILE.open("rb") as movie_file:
-    movies_dict = pickle.load(movie_file)
-movies = pd.DataFrame(movies_dict)
-
-with SIMILARITY_FILE.open("rb") as similarity_file:
-    similarity = pickle.load(similarity_file)
-
-
-API_KEY = os.getenv("TMDB_API_KEY")
-
-if not API_KEY:
-    st.error("TMDB API key is not configured. Set the TMDB_API_KEY environment variable and restart the app.")
-    st.stop()
 
 def fetch_movie_details(movie_id):
 
